@@ -1,3 +1,9 @@
+/*
+* Title :     Hello_word
+* Keyword :   Arduino; IIC OLED; Uglib
+* Funcation : Dynamic display variable in the OLED.
+*/
+
 #include <Arduino.h>
 
 #include "U8glib.h"

@@ -1,9 +1,10 @@
 /*
-* Title :     MQ135_Bluetooth
-* Keyword :   Arduino; Open Jumper bluetooth; MQ135; OLED IIC
-* Funcation1 : Detection MQ135 analog value; 
+1. Title :     MQ135_Pro_nimi
+2. Keyword :   Arduino pRO MINI; Open Jumper bluetooth; MQ135; OLED IIC
+3. Funcation1 : Detection MQ135 analog value; 
 * Funcation2 ：OLED dynamic display MQ135_ppm;
 * Funcation3 : Bluetooth send value 
+* Funcation4 : Uart downloading
 */
 
 #include <Arduino.h>

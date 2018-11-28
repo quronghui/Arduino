@@ -1,6 +1,8 @@
 /*
-* Title : Mathlib
-* 1. Test constrain() funcation.
+1. Title :      Mathlib
+2. Keyword :    mapping randomseed 
+3. Funcation1 ：mathlib funcation
+4. Notes:       
 */
 
 #include <Arduino.h>

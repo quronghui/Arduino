@@ -1,12 +1,8 @@
 /*
-* This team is static scope. 
-* 让数的值在一个范围内变动
-* RandomWalk
-* Paul Badger 2007
-* RandomWalk函数在两个终点间随机的上下移动
-* 在一个循环中最大的移动由参数“stepsize”决定
-* 一个静态变量向上和向下移动一个随机量
-* 这种技术也被叫做“粉红噪声”或“醉步”
+1. Title :     Static_Scope
+2. Keyword :   限制数的范围 
+3. Funcation1 ：限制数在某一个范围内随机生成
+4. Notes:       RandomWalk函数在两个终点间随机的上下移动，在一个循环中最大的移动由参数“stepsize”决定，一个静态变量向上和向下移动一个随机量。这种技术也被叫做“粉红噪声”或“醉步”
 */
 
 #include <Arduino.h>

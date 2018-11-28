@@ -1,11 +1,10 @@
 /*
-* Title :     Hello_word
-* Keyword :   Arduino; IIC OLED; Uglib
-* Funcation : Dynamic display variable in the OLED.
+1. Title :     Hello_word
+2. Keyword :   Arduino; IIC OLED; Uglib
+3. Funcation : Dynamic display variable in the OLED.
 */
 
 #include <Arduino.h>
-
 #include "U8glib.h"
 
 U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE|U8G_I2C_OPT_DEV_0); 

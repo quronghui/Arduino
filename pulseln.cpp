@@ -1,6 +1,8 @@
 /*
-* Pulseln 用于检测脉冲,高低转换的时间长短
-* unsigned long pulseIn (uint8_t pin, uint8_t state, unsigned long timeout) 
+1. Title :      Pulseln
+2. Keyword :    检测跳变沿 
+3. Funcation1 ：用于检测脉冲,高低转换的时间长短
+4. Notes:       unsigned long pulseIn (uint8_t pin, uint8_t state, unsigned long timeout) 
 */
 
 #include <Arduino.h>

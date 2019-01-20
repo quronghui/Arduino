@@ -1,0 +1,101 @@
+
+/*
+  调代码一步步的调
+1. 验证数组可以传递到中断中
+2. 如果变量的值一直在变动,这个如何传递. for循环中的判断值,不能是动态变量的
+3. 验证全局变量 sampling， 可以传递到中断中
+4. 验证检测了第几次口气 number ，可以传递到中断中 ?  放在中断中
+5. EEPROM : 将数据存储到EEPROM 
+6. 中断中加入定时延时：每隔一个中断的时间，执行一次中断，达不到效果
+*/
+
+#include "Arduino.h"
+#include <FlexiTimer2.h>
+
+int pinInterrupt = 2;           //连接震动开关到中断0，也就是数字引脚2
+int SensorLED = 13;              //定义LED为数字引脚9 
+int array[100];                 //定义全局数组,验证1
+int sampling;                   //定义一个全局变量,为了传递采样了多少个数据，验证2;
+int number ;                     //定义一个全局变量,为了传递检测的次数
+int temp ;
+
+
+// 函数声明
+void blink();                   // 中断函数，检测到RISING，便进入中断函数进行执行
+void SerialprintMQarray();      // 串口打印， Debug 函数
+
+void SerialPrint();
+void SerialPrint1();
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600); // 9600 bps
+  pinMode(SensorLED, OUTPUT);         //LED为输出模式
+  pinMode(pinInterrupt, INPUT);        //震动开关为输入模式
+  //下降沿触发，触发中断0，调用blink函数
+  // 对数字信号进行读取https://www.jianshu.com/p/425fd9f54f66
+  
+  attachInterrupt( digitalPinToInterrupt(pinInterrupt), blink, CHANGE);
+}
+
+void loop() {
+  //number = 0;                                              // 定义检测口气的次数 number = 0
+  sampling = 1;                                           // 定义初始采样次数 sampling =1,数组的size = (sampling + 1)
+  if ( digitalRead(pinInterrupt) == LOW ){               // 检测按键是否按下
+    Serial.println("Key Down");                         // 打印一个按下的标志位
+    //number++;                                          // 当检测到KEY的时候，是第一次进行检测
+      for(int i=0; i<100; i++){                        // 对数组进行循环赋值
+        array[i]=i;
+        delay(200);                                  // 延时500ms后，在进行采样存储
+        sampling++;                                 // 采样数sampling 进行加1
+        if ( digitalRead(pinInterrupt) == HIGH )   // 每500ms检测一次按键，按键是否抬起，抬起的话就跳出循环
+          break;                                   // continue 当执行完中断后，会保留原来的值；用的是break;
+     }
+    Serial.print("Interrupt return value: ");     // 为了测试全局变量：中断函数中的值能返回到主函数中。
+    Serial.println(temp);
+  }
+
+  Serial.println("Please press the key");
+  delay(1000);                                    // 这个必须的保持着动态检测，这样才能实时的进行显示；因为我的中断是检测上升沿
+}
+
+void blink() {               //中断函数blink()
+
+  // if ( digitalRead(pinInterrupt) == HIGH ){
+  //   SerialprintMQarray();
+  // }
+
+    if( digitalRead(pinInterrupt) == LOW){
+        FlexiTimer2::set(1000, 1.0/1000, SerialPrint); // call every 500 1ms "ticks"
+        // FlexiTimer2::set(500, flash); // MsTimer2 style is also supported
+        FlexiTimer2::start();
+
+    }
+    else{
+      FlexiTimer2::set(1000, 1.0/1000, SerialPrint1); // call every 500 1ms "ticks"
+        // FlexiTimer2::set(500, flash); // MsTimer2 style is also supported
+      FlexiTimer2::start();
+    }
+
+}
+/**************************************/
+void SerialPrint(){
+    Serial.println("Key Down"); 
+}
+void SerialPrint1(){
+    Serial.println("Key UP"); 
+}
+
+/************************************/
+/*Serial Debug Production*/
+void SerialprintMQarray(){
+  Serial.println("Key UP");                      // 检测按键是否抬起
+  Serial.print("The sampling is sampling :");    // 输出采样的次数 sampling
+  Serial.println(sampling);                     
+  for(int i=0; i<sampling; i++){                // 输出采样数组里面的值 array[]
+    Serial.print(array[i]);                     // println 自带回车
+    Serial.print("  ");                       
+  }
+  temp = array[sampling-1];
+  Serial.println("");
+}

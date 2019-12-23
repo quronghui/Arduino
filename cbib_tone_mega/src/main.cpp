@@ -7,7 +7,7 @@
 #define Air_pump_first  4                                // 气泵1 -- 数字引脚4
 #define  Air_pump_second 5                        // 气泵2 -- 数字引脚5
 #define Air_pump_third 6                       // 气泵3 -- 数字引脚6
-#define Air_pump_third_two  7         // 气泵3排气的控制：通过arduino UNO 给一个控制信号
+#define Air_pump_third_two  7         // 气泵3 排气的控制：通过arduino UNO 给一个高电平的控制信号
 
 // 12v控制
 #define Direct_connection_first 8           // 直通阀1 -- 数字引脚 9
@@ -23,9 +23,9 @@ int sendTime = 0;
  // bmp180气压传感器的限制
  struct delay_time
  {
-   int  Ventilation_delay = 10 ;   // 通气延时时间
-   float high_pressure = 104000;    //  储气接近上限时的bmp180的值
-   float low_pressure = 102000;
+   int  Ventilation_delay = 3 ;   // 通气延时时间
+   float high_pressure = 103500;    //  储气接近上限时的bmp180的值
+   float low_pressure = 101000;
 
  }Time ;
  
@@ -69,7 +69,7 @@ void  Action_first()
   digitalWrite(Direct_connection_first, LOW);
   digitalWrite(Air_pump_first, LOW);     
   digitalWrite(Air_pump_second, LOW);
-  digitalWrite(Air_pump_third, LOW);
+  // digitalWrite(Air_pump_third, LOW);
   delay(1000 * Time.Ventilation_delay) ;       // 通气延时时间
 
   // （2）储气袋排气
@@ -88,8 +88,9 @@ void  Action_first()
       delay(100);
   }
   digitalWrite(Air_pump_second, HIGH);    // 关闭第二个气泵
-
-
+  
+  digitalWrite(Air_pump_third, LOW);        // 打开第三个气泵
+  // Serial.print(" Air_pump_third is low: \n");
   // （3）传感器阵列排气：  Arduino UNO会给mega一个控制信号，停止抽气
   while (digitalRead(Air_pump_third_two) == 0)  
   {
@@ -149,18 +150,45 @@ void Action_third()
   delay(500); 
 }
 
+//  工作模式四：抽气模式
+void Action_four()
+{
+  // digitalWrite(Direct_connection_first, HIGH);
+  // digitalWrite(Air_pump_first, HIGH);
+  // digitalWrite(Air_pump_second, HIGH);
+  digitalWrite(Air_pump_third, LOW);
+
+  // 传感器阵列排气： 当传感器阵列气体低于LOW_pressure,  Arduino UNO会给mega一个HIGH高的控制信号;
+  // while (digitalRead(Air_pump_third_two) == 0)  
+  // {
+  //   // Serial.print("Air_pump_third_two: ");
+  //   digitalWrite(Air_pump_third, LOW);
+  //   delay(100);
+  // }
+  
+  delay(500);
+
+}
+
+
+
 /************ ****工作模式的判断：*********************/
 void Judge_mode()
 {
-  // 工作模式一
+  // 工作模式一: 排气模式
   if(digitalRead(Mode_first) == 0 )
       Action_first();
   
+  // 工作模式二: 储气模式
   if(digitalRead(Mode_second) == 0)
     Action_second();
     
-  if(digitalRead(Mode_third) == 0)
-    Action_third(); 
+  // 模式三：传感器阵列反映模式，由接收端控制
+
+  // 按钮三：采集装置停止按钮
+  if(digitalRead(Mode_third) == 0){
+    StopAll();  // 停止检测
+  }
 
   delay(100);
 
@@ -170,23 +198,33 @@ void Judge_mode()
 void Gas_Detection()
 {
   int readNum = 0;
+  int not_readValue = 15;   // 设置预先采集的次数
 
   if (Serial.available()){
     readNum = Serial.read();
     if(readNum != '\r'){
       sendTime = sendTime * 10 + (readNum - 48);
     }
-    else{
-      digitalWrite(Air_pump_second, LOW);
+    else{     
       for(int j = 0; j < sendTime; j ++){
+        // 设置预先采集的次数
+       if(j == not_readValue)
+          Action_third();   //  检测模式，将气体通入到传感器阵列中
+        // 设置采集气体抽出的时间点
+        if(j == sendTime - 15)
+          Action_four();
         for(int i = 0; i < 15; i ++){
           Gas[i] = analogRead(i);
         }
-        // 控制吸气装置停止
+
+        // 控制气泵二吸气装置停止
         float pressure = Test_Pressure() ;
         if ( pressure < Time.low_pressure )
             digitalWrite(Air_pump_second, HIGH);
-        
+        // 控制抽气装置停止
+        if(digitalRead(Air_pump_third_two) == 1)
+          digitalWrite(Air_pump_third, HIGH);
+
         //float smoke_float = wet_int / 204.6;
         Serial.print("GAS_A0=");Serial.print(Gas[0]);Serial.print(" ");
         Serial.print("GAS_A1=");Serial.print(Gas[1]);Serial.print(" ");
@@ -207,10 +245,16 @@ void Gas_Detection()
       }
       sendTime = 0;    
     }
+
+    // 控制气泵二吸气装置停止
     float pressure = Test_Pressure() ;
     if ( pressure < Time.low_pressure )
       digitalWrite(Air_pump_second, HIGH);
+
   }
+  // 控制抽气装置停止
+    if(digitalRead(Air_pump_third_two) == 1)
+      digitalWrite(Air_pump_third, HIGH);
 }
 
 /*************bmp180气压传感器测量************/ 

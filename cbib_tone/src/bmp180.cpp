@@ -1,7 +1,7 @@
 #include <Arduino.h>
 
 #define Air_pump_third_two 7    // 用于控制气泵3的状态；
-#define low_pressure 102600
+#define low_pressure 101200
 //Arduino 1.0+ Only
 //Arduino 1.0+ Only
 
@@ -273,7 +273,7 @@ void loop()
   delay(1000); //wait a second and get values again.
 
   if ( pressure < low_pressure ){
-    digitalWrite(Air_pump_third_two, HIGH);
+    digitalWrite(Air_pump_third_two, HIGH);     // 给一个高电平信号
     delay(100);
   }
 }

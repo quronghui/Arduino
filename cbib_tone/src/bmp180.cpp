@@ -276,4 +276,10 @@ void loop()
     digitalWrite(Air_pump_third_two, HIGH);     // 给一个高电平信号
     delay(100);
   }
+  else
+  {
+    digitalWrite(Air_pump_third_two, LOW);     // 给一个高电平信号
+    delay(100);
+  }
+  
 }

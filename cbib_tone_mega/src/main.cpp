@@ -4,13 +4,16 @@
 #include "bmp180.h"
 
 //  5v控制
-#define Air_pump_first  4                                // 气泵1 -- 数字引脚4
-#define  Air_pump_second 5                        // 气泵2 -- 数字引脚5
-#define Air_pump_third 6                       // 气泵3 -- 数字引脚6
-#define Air_pump_third_two  7         // 气泵3 排气的控制：通过arduino UNO 给一个高电平的控制信号
+#define Buzzer  2                                             // 提示模式二的开始和结束
+#define  Air_pump_second 4                        // 气泵2 -- 数字引脚5
+#define Air_pump_third 5                      // 气泵3 -- 数字引脚6
+#define Air_pump_third_two  6         // 气泵3 排气的控制：通过arduino UNO 给一个高电平的控制信号
 
 // 12v控制
-#define Direct_connection_first 8           // 直通阀1 -- 数字引脚 9
+#define  Direct_connection_second 7         //  直通阀2 -- 数字引脚 4
+#define Direct_connection_first 8                    // 直通阀1 -- 数字引脚 8
+#define Air_pump_first 9           // 直通阀1 -- 数字引脚 9
+
 // 工作模式设置
 #define Mode_first  10          // 工作模式一： 排气模式
 #define Mode_second 11  // 工作模式二： 储气模式
@@ -23,7 +26,7 @@ int sendTime = 0;
  // bmp180气压传感器的限制
  struct delay_time
  {
-   int  Ventilation_delay = 3 ;   // 通气延时时间
+   int  Ventilation_delay = 5 ;   // 通气延时时间
    float high_pressure = 103500;    //  储气接近上限时的bmp180的值
    float low_pressure = 101000;
 
@@ -38,9 +41,11 @@ float Test_Pressure();
 void InitPin()
 { 
   pinMode(Direct_connection_first, OUTPUT); 
+  pinMode(Direct_connection_second, OUTPUT);
   pinMode(Air_pump_first, OUTPUT);
   pinMode(Air_pump_second, OUTPUT);
   pinMode(Air_pump_third, OUTPUT);
+  pinMode(Buzzer, OUTPUT);
 
   // Air_pump_third_two input
   pinMode(Air_pump_third_two, INPUT);
@@ -56,9 +61,11 @@ void InitPin()
 void StopAll()
 {
   digitalWrite(Direct_connection_first, HIGH);
+  digitalWrite(Direct_connection_second, HIGH);
   digitalWrite(Air_pump_first, HIGH);
   digitalWrite(Air_pump_second, HIGH);
   digitalWrite(Air_pump_third, HIGH);
+  digitalWrite(Buzzer, LOW);
 }
 
 /*******************************工作模式设置******************************/
@@ -66,18 +73,18 @@ void StopAll()
 void  Action_first()
 {
   // （1）整体装置排气体
-  digitalWrite(Direct_connection_first, LOW);
+  digitalWrite(Direct_connection_first, HIGH);
+  digitalWrite(Direct_connection_second, LOW);
   digitalWrite(Air_pump_first, LOW);     
   digitalWrite(Air_pump_second, LOW);
-  // digitalWrite(Air_pump_third, LOW);
+  digitalWrite(Air_pump_third, LOW);
   delay(1000 * Time.Ventilation_delay) ;       // 通气延时时间
 
   // （2）储气袋排气
     digitalWrite(Direct_connection_first, HIGH);
     digitalWrite(Air_pump_first, HIGH);     
-    delay(500 *Time.Ventilation_delay);
-  // digitalWrite(Air_pump_second, LOW);
-  // digitalWrite(Air_pump_third, LOW);
+
+  digitalWrite(Air_pump_third, HIGH);
   float pressure = Test_Pressure() ;
   while ( pressure > Time.low_pressure )
   {
@@ -88,9 +95,9 @@ void  Action_first()
       delay(100);
   }
   digitalWrite(Air_pump_second, HIGH);    // 关闭第二个气泵
-  
+  delay(100);
   digitalWrite(Air_pump_third, LOW);        // 打开第三个气泵
-  // Serial.print(" Air_pump_third is low: \n");
+
   // （3）传感器阵列排气：  Arduino UNO会给mega一个控制信号，停止抽气
   while (digitalRead(Air_pump_third_two) == 0)  
   {
@@ -98,16 +105,40 @@ void  Action_first()
     digitalWrite(Air_pump_third, LOW);
     delay(100);
   }
-  
 
   StopAll();    // 工作模式1停止
   delay(500);
 }
 
-//  工作模式二 储气模式：  直1开，气1开，气2关，气3关;
+//  工作模式二 储气模式——人体呼出气体采集：  直1开，气1开，气2关，气3关;
 void Action_second()
 {
   digitalWrite(Direct_connection_first, LOW);
+  digitalWrite(Direct_connection_second, HIGH);
+  digitalWrite(Air_pump_first, HIGH);
+  digitalWrite(Air_pump_second, HIGH);
+  digitalWrite(Air_pump_third, HIGH);
+  // delay(500 * Time.Ventilation_delay);
+  
+  float pressure = Test_Pressure() ;
+  while ( pressure < Time.high_pressure )
+  {
+    pressure = Test_Pressure();
+    // Serial.print("Pressure: ");
+    // Serial.print(pressure, 0); //whole number only.
+    // Serial.println(" Pa");
+      delay(100);
+  } 
+  StopAll();    // 停止储气；
+  delay(500);
+}
+
+//  工作模式二 储气模式——挥发性气体采集
+
+void Action_second_vol()
+{
+  digitalWrite(Direct_connection_first, HIGH);
+  digitalWrite(Direct_connection_second, HIGH);
   digitalWrite(Air_pump_first, LOW);
   digitalWrite(Air_pump_second, HIGH);
   digitalWrite(Air_pump_third, HIGH);
@@ -126,10 +157,12 @@ void Action_second()
   delay(500);
 }
 
+
 // 工作模式三 检测模式：  直1关，气1关，气2开，气3关;
 void Action_third()
 {
   digitalWrite(Direct_connection_first, HIGH);
+  digitalWrite(Direct_connection_second, LOW);
   digitalWrite(Air_pump_first, HIGH);
   digitalWrite(Air_pump_second, LOW);
   digitalWrite(Air_pump_third, HIGH);
@@ -154,6 +187,7 @@ void Action_third()
 void Action_four()
 {
   // digitalWrite(Direct_connection_first, HIGH);
+  // digitalWrite(Direct_connection_second, HIGH);
   // digitalWrite(Air_pump_first, HIGH);
   // digitalWrite(Air_pump_second, HIGH);
   digitalWrite(Air_pump_third, LOW);
@@ -176,22 +210,40 @@ void Action_four()
 void Judge_mode()
 {
   // 工作模式一: 排气模式
-  if(digitalRead(Mode_first) == 0 )
+  int i = 0;
+  if(digitalRead(Mode_first) == 0 ){
+    for ( ;  i < 2; i++)
+    {
       Action_first();
-  
-  // 工作模式二: 储气模式
-  if(digitalRead(Mode_second) == 0)
-    Action_second();
+    }
+    for(int j =0 ; j < 3 ; j++){
+      digitalWrite(Buzzer, HIGH);
+      delay(100);
+       digitalWrite(Buzzer, LOW);
+      delay(100);
+   }
     
-  // 模式三：传感器阵列反映模式，由接收端控制
-
-  // 按钮三：采集装置停止按钮
-  if(digitalRead(Mode_third) == 0){
-    StopAll();  // 停止检测
   }
+  
+  // 工作模式二: 储气模式~通过人体呼出气体
+  if(digitalRead(Mode_second) == 0){
+    // 加了一个蜂鸣器进行提示；
+      digitalWrite(Buzzer, HIGH);
+      delay(500);
+      digitalWrite(Buzzer, LOW);
+      
+      Action_second();
+
+      digitalWrite(Buzzer, HIGH);
+      delay(500);
+      digitalWrite(Buzzer, LOW);
+    }
+      
+  // 工作模式二: 储气模式~通过吸气采集易挥发气体
+  if(digitalRead(Mode_third) == 0)
+    Action_second_vol();
 
   delay(100);
-
 }
 
 /*****************传感器检测，电脑端口读取******************/
@@ -211,7 +263,7 @@ void Gas_Detection()
        if(j == not_readValue)
           Action_third();   //  检测模式，将气体通入到传感器阵列中
         // 设置采集气体抽出的时间点
-        if(j == sendTime - 15)
+        if(j == sendTime - 50)
           Action_four();
         for(int i = 0; i < 15; i ++){
           Gas[i] = analogRead(i);

@@ -16,8 +16,8 @@
 
 // 工作模式设置
 #define Mode_first  10          // 工作模式一： 排气模式
-#define Mode_second 11  // 工作模式二： 储气模式
-#define Mode_third  12    // 工作模式三： 检测模式
+#define Mode_second 11  // 工作模式二： 储气模式～人体呼出气体
+#define Mode_third  12    // 工作模式三： 储气模式～易挥发性气体
  
 // Gas Sensors
 int Gas[15];
@@ -251,6 +251,7 @@ void Gas_Detection()
 {
   int readNum = 0;
   int not_readValue = 15;   // 设置预先采集的次数
+  int model_one_time = 0;   // 自动进行换气的判断
 
   if (Serial.available()){
     readNum = Serial.read();
@@ -295,13 +296,27 @@ void Gas_Detection()
         Serial.print("GAS_A14=");Serial.print(Gas[14]);Serial.print(" \r\n");
         delay(100);
       }
-      sendTime = 0;    
+      sendTime = 0;  
+      model_one_time++;  
+      delay(1000);
+      if(sendTime == 0 && model_one_time > 0){
+
+      // 第二次开始后，自动进行换气
+        Action_first();
+        for(int j =0 ; j < 3 ; j++){
+          digitalWrite(Buzzer, HIGH);
+          delay(100);
+          digitalWrite(Buzzer, LOW);
+          delay(100);
+        }
+      }
     }
 
     // 控制气泵二吸气装置停止
     float pressure = Test_Pressure() ;
     if ( pressure < Time.low_pressure )
       digitalWrite(Air_pump_second, HIGH);
+
 
   }
   // 控制抽气装置停止

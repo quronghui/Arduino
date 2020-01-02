@@ -27,7 +27,7 @@ int sendTime = 0;
  struct delay_time
  {
    int  Ventilation_delay = 5 ;   // 通气延时时间
-   float high_pressure = 103500;    //  储气接近上限时的bmp180的值
+   float high_pressure = 104100;    //  储气接近上限时的bmp180的值
    float low_pressure = 101000;
 
  }Time ;
@@ -212,7 +212,7 @@ void Judge_mode()
   // 工作模式一: 排气模式
   int i = 0;
   if(digitalRead(Mode_first) == 0 ){
-    for ( ;  i < 2; i++)
+    for ( ;  i < 3; i++)
     {
       Action_first();
     }
@@ -297,12 +297,15 @@ void Gas_Detection()
         delay(100);
       }
       sendTime = 0;  
-      model_one_time++;  
-      delay(1000);
-      if(sendTime == 0 && model_one_time > 0){
 
-      // 第二次开始后，自动进行换气
-        Action_first();
+      // 第二次储气开始后，进行装置的自动换气
+      model_one_time++;  
+      delay(2000);
+      if(sendTime == 0 && model_one_time > 0){
+        for (int i = 0; i < 2; i++)
+        {
+          Action_first();
+        }
         for(int j =0 ; j < 3 ; j++){
           digitalWrite(Buzzer, HIGH);
           delay(100);
@@ -316,7 +319,6 @@ void Gas_Detection()
     float pressure = Test_Pressure() ;
     if ( pressure < Time.low_pressure )
       digitalWrite(Air_pump_second, HIGH);
-
 
   }
   // 控制抽气装置停止
@@ -338,7 +340,7 @@ float Test_Pressure()
 
   // Serial.print("Pressure: ");
   // Serial.print(pressure);
-  // // Serial.print(pressure, 0); //whole number only.
+  // Serial.print(pressure, 0); //whole number only.
   // Serial.println(" Pa");
 
   // Serial.print("Standard Atmosphere: ");
@@ -350,7 +352,7 @@ float Test_Pressure()
 
   // Serial.println();//line break
 
-  delay(100); //wait a second and get values again.
+  // delay(1000); //wait a second and get values again.
 
   return pressure;
 }
@@ -370,5 +372,6 @@ void setup() {
 void loop() {
   Judge_mode();       // 三个工作模式的判断
   Gas_Detection();  // 传感器采集数据
+  // Test_Pressure();
 }
 
